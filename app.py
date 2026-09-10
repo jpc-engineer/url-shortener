@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from contextlib import asynccontextmanager
 from sqlalchemy import create_engine, String, Column
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -44,6 +44,20 @@ async def redirect_url(short_code: str):
             return RedirectResponse(existing_short_code.long_url, status_code=302)
         else:
             raise HTTPException(status_code=404, detail="URL not found")
+    finally:
+        db.close()
+
+@app.delete("/{short_code}")
+async def delete_links(short_code: str):
+    db = SessionLocal()
+    try:
+        existing_short_code = db.query(URL).filter(URL.short_code == short_code).first()
+        if existing_short_code:
+            db.delete(existing_short_code)
+            db.commit()
+        else:
+            pass
+        return Response(status_code=200)
     finally:
         db.close()
 
