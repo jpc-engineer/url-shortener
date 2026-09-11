@@ -41,7 +41,7 @@ async def redirect_url(short_code: str):
     try:
         existing_short_code = db.query(URL).filter(URL.short_code == short_code).first()
         if existing_short_code:
-            return RedirectResponse(existing_short_code.long_url, status_code=302)
+            return RedirectResponse(existing_short_code.long_url, status_code=302) # type: ignore
         else:
             raise HTTPException(status_code=404, detail="URL not found")
     finally:
@@ -65,15 +65,16 @@ async def delete_links(short_code: str):
 async def create_short_url(payload: URLRequest):
     db = SessionLocal()
     try:
-        existing_url = db.query(URL).filter(URL.long_url == payload.url).first()
+        url_string = str(payload.url)
+        existing_url = db.query(URL).filter(URL.long_url == url_string).first()
 
         if existing_url:
             return {"key": existing_url.short_code, "long_url": existing_url.long_url, "short_url": f"http://localhost:8000/{existing_url.short_code}"}
         else:
-            encode_url = payload.url.encode('utf-8')
+            encode_url = url_string.encode('utf-8') # type: ignore
             sha256_hash = hashlib.sha256(encode_url).hexdigest()
             short_url = sha256_hash[0:8]
-            new_url = URL(short_code=short_url, long_url=payload.url)
+            new_url = URL(short_code=short_url, long_url=url_string)
             db.add(new_url)
             db.commit()
             
